@@ -1,104 +1,138 @@
 Airfoil Optimization with XFOIL, Genetic Algorithms, and Reinforcement Learning
 
-This project automates airfoil optimization using Genetic Algorithms (GA) and Reinforcement Learning (RL) with XFOIL. It includes tools for generating Bezier-curve-defined airfoils, creating .dat files for XFOIL, running XFOIL simulations, and analyzing aerodynamic performance.
+This project provides a complete pipeline for airfoil shape optimization using Soft Actor-Critic (SAC), Deep Deterministic Policy Gradient (DDPG), and a Genetic Algorithm (GA). Airfoils are defined using Bézier curves, automatically converted into XFOIL-compatible .dat files, evaluated aerodynamically, and refined through optimization. The framework integrates Gymnasium, Stable-Baselines3, XFOIL, and custom geometry-generation tools.
 
 ------------------------------------------------------------
 1. Genetic Algorithms (GA)
 
-Purpose: Optimize airfoil shapes by evolving populations of candidate designs.
+Purpose:
+Explore the airfoil design space through evolutionary optimization.
 
-Records Maintained:
-- Optimal airfoil shape
-- Convergence history
-- Performance metrics for each generation
+Structure:
+A GA would operate directly on the 8-point Bézier geometry vector, using the same evaluation function as the RL environment.
 
-Objective: Maximize lift-to-drag (L/D) ratio at a given angle of attack and Reynolds number.
+Records Maintained (typical GA fields):
+- Best-performing geometry each generation
+- Fitness values (L/D) for all candidates
+- Convergence curve
+- Mutation/crossover histories
 
-Constraints:
-- Leading and trailing edge coordinates fixed
-- Maximum thickness constraint
-- No self-intersecting airfoil shapes
+Objective:
+- Maximize L/D under the same aerodynamic and geometric constraints as RL.
 
 Variables Optimized:
-- Control points for Bezier curves defining the airfoil shape
-- Reynolds number
+- Upper-curve control points: [yu1, yu2, yu3, yu4]
+- Lower-curve control points: [yl1, yl2, yl3, yl4]
 
 ------------------------------------------------------------
 2. Reinforcement Learning (RL)
 
-Purpose: Train an RL agent to iteratively improve airfoil designs.
+Purpose:
+Train an RL agent to iteratively adjust Bézier control points to produce airfoils with improved aerodynamic efficiency.
+
+Implemented Algorithms:
+- Soft Actor-Critic (SAC)
+- Deep Deterministic Policy Gradient (DDPG)
+
+Environment:
+- custom_env.py defines XFOILEnv, a continuous-action environment wrapping XFOIL.
 
 Records Maintained:
-- Optimal airfoil shape
-- Action history
-- State history
-- Reward history
-- Training performance over episodes
+- Airfoil geometry history (Bézier curves)
+- L/D performance history
+- Sequence of states and actions
+- Saved .dat airfoil files
 
-Objective: Maximize lift-to-drag (L/D) ratio at a given angle of attack and Reynolds number.
+Objective:
+- Maximize lift-to-drag ratio (L/D) averaged across angles of attack.
 
 Constraints:
-- Leading and trailing edge coordinates fixed
-- Maximum thickness constraint
-- No self-intersecting airfoil shapes
+- No self-intersecting geometry
+- Minimum thickness constraints per control-point pair
+- Leading/trailing edge fixed at (0,0) and (1,0)
+- Bézier point movement limited to ±0.15
+- Airfoil shape must remain within observation bounds
 
 Variables:
-- Control points for Bezier curves defining airfoil shape
-- Discount factor for future rewards
-- Learning rate for updating policy
-- Number of episodes for training
-- Reynolds number
+- 8 control-point vertical displacements (state)
+- 8 continuous action values (Δy adjustments)
+- Reward = mean(L/D) from XFOIL
+- Discount factor, learning rate, network size (via SAC/DDPG hyperparameters)
 
 ------------------------------------------------------------
 3. XFOIL Automation
 
-This project includes Python scripts to run XFOIL automatically for a given airfoil shape and operating conditions.
+Purpose:
+Automate generation, simulation, and extraction of aerodynamic performance.
+
+Functions Used:
+- simulate_airfoil(foil_name)
+- bezier_curve(…) (creates .dat file for XFOIL)
 
 Inputs:
-- .dat file defining the airfoil
-- Operating conditions: Reynolds number, angles of attack, number of iterations
+- Bézier-based airfoil .dat file
+- Reynolds number (default: 1,000,000)
+- Angle-of-attack sweep (default: 5° to 7°)
+- Maximum iteration count (default: 250)
 
 Outputs:
-- Polar data file (polar_file.txt) containing:
+- polar_file.txt containing:
   - Lift coefficient (CL)
   - Drag coefficient (CD)
-  - Lift-to-drag ratio (L/D)
+  - L/D ratio
+- Returned L/D array for reward calculation
 
 Features:
-- Writes XFOIL input files automatically
-- Runs XFOIL using subprocess
-- Parses polar data for performance metrics
+- Automatic .dat file creation
+- Automatic generation of XFOIL input script
+- XFOIL is invoked via subprocess.call()
+- Robust handling when XFOIL fails (returns L/D = 0)
 
 ------------------------------------------------------------
 4. Bezier Curve Airfoil Generation
 
-Purpose: Define smooth airfoil shapes using a set of control points.
+Purpose:
+Generate smooth, continuous airfoils suitable for aerodynamic simulation.
 
 Functions:
-- Bezier curve generation: Converts control points into a continuous airfoil shape
-- .dat file creation: Generates XFOIL-compatible files for simulation
+- bezier_curve(foil_name, yu, yl)
+- Builds full upper and lower surfaces
+- Computes 100 Bézier-sampled points
+- Writes XFOIL-compatible airfoil geometry file
+- Returns full x/y distributions for plotting
 
 Inputs:
-- Control points
-- Number of points to sample
-- Sample point distribution
+- yu: Upper surface control-point y-values
+- yl: Lower surface control-point y-values
+- 100 sampling points distributed via linspace
 
 Outputs:
-- Continuous airfoil shape function
-- .dat file for XFOIL
+- (Pxu, Pyu) upper surface points
+- (Pxl, Pyl) lower surface points
+- <foil_name>.dat written to workspace
 
 ------------------------------------------------------------
 5. Visualization
 
-Purpose: Analyze and visualize airfoil shapes and aerodynamic performance.
+Purpose:
+Provide graphical insight into geometry evolution and aerodynamic performance.
+
+Functions:
+- plot_airfoil(env)
+- Loads all generated Airfoil_*.dat files
+- Animates the shape evolution step-by-step
+- Plots Bézier points and actual airfoil surface
+- plot_performance(env, window=50)
+- Moving-average L/D plot
+- Shows learning stability and convergence during RL training
 
 Inputs:
-- Airfoil shape data
-- Performance metrics (CL, CD, L/D)
+- Geometry logs from XFOILEnv
+- Performance logs (L/D values)
 
 Outputs:
-- Plots of airfoil geometries
-- Performance curves vs angle of attack
+- Training animations
+- Performance trend plots
 
 ------------------------------------------------------------
 6. Installation
@@ -115,25 +149,20 @@ Outputs:
 ------------------------------------------------------------
 7. Usage
 
-1. Generate airfoil shape and .dat file:
-   python generate_airfoil.py
+1. Run SAC optimization:
+   python sac_main.py
 
-2. Run XFOIL simulations:
-   python run_xfoil.py
+2. Run DDPG optimization:
+   python ddpg_main.py
 
-3. Perform GA or RL optimization:
-   python main_ga.py
-   python main_rl.py
-
-4. Visualize results:
-   python visualize_results.py
+3. Run GA optimization:
+   python ga_main.py
 
 ------------------------------------------------------------
 Notes
 
 - All airfoil designs follow geometric constraints to ensure realistic shapes.
 - Both GA and RL approaches aim to maximize L/D ratio but use different optimization strategies.
-- The pipeline supports automated XFOIL simulation and post-processing for large-scale experiments.
 
 ------------------------------------------------------------
 References

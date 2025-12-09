@@ -1,10 +1,5 @@
-import gymnasium as gym
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 from custom_env import XFOILEnv
 from stable_baselines3 import DDPG
-import glob
 from utils import plot_airfoil
 from utils import plot_performance
  

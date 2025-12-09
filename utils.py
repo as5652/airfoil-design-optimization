@@ -4,8 +4,6 @@ import os
 import subprocess
 import sympy as sym
 import math
-from gymnasium import Env
-from gymnasium.spaces import Discrete, Box
 from matplotlib.animation import FuncAnimation
 import glob
 

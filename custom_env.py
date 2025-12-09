@@ -1,12 +1,8 @@
 # import necessary libraries
 import os
-import subprocess
 import numpy as np
-import matplotlib.pyplot as plt
-import sympy as sym
-import math
 from gymnasium import Env
-from gymnasium.spaces import Discrete, Box
+from gymnasium.spaces import Box
 from utils import bezier_curve
 from utils import simulate_airfoil
 
@@ -129,5 +125,5 @@ class XFOILEnv(Env):
 
     def reset(self, seed=None, **kwargs):
         """Reset environment for gymnasium compatibility."""
-        self.state = [0.1, 0.1, 0.2, 0.1, -0.1, -0.2, -0.1, -0.1]
+        self.state = [0.1, 0.1, 0.1, 0.1, -0.1, -0.1, -0.1, -0.1]
         return np.array(self.state, dtype=np.float32), {}

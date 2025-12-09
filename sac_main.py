@@ -1,12 +1,5 @@
-import gymnasium as gym
-import numpy as np
-import matplotlib.pyplot as pltSS
-from matplotlib.animation import FuncAnimation
 from custom_env import XFOILEnv
-from stable_baselines3 import PPO
-from stable_baselines3 import DQN
 from stable_baselines3 import SAC
-import glob
 from utils import plot_airfoil
 from utils import plot_performance
  
